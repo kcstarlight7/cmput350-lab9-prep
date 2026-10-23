@@ -120,25 +120,30 @@ int main() {
             player.velocity.y += GRAVITY;
         }
         player.update();
-        // camera
+        
+        // check if playerposx (window) is more than (limit_percent coord) and less than (1-limit_percent coord)
+        if (camera.worldToWindowPercent(player.position).x < SOFT_LIMIT_PERCENT) {
+            sf::Vector2f boundaryLocation(WINDOW_WIDTH * SOFT_LIMIT_PERCENT, camera.worldToWindow(player.position).y);
+            sf::Vector2f newPlayerLocWindow =
+                camera.worldToWindow(player.position) +
+                (SOFT_CAMERA_ALPHA) * (boundaryLocation - camera.worldToWindow(player.position));
+            camera.setCamera(player.position, newPlayerLocWindow);
 
-        // TODO: Remove this line and replace it with code that determines if the player's (center)
-        // is between the two green lines (open space), in the soft exclusion zones (between the
-        // green and red lines), or in the hard exclusion zones (beyond either of the red lines).
-        //
-        // If the player is in the open zone, the camera does not need to move.
-        //
-        // If the player is in the soft exclusion zones, the camera should softly translate over
-        // multiple frames (via an exponential moving average) until the player's center is aligned
-        // with the violated soft boundary. Use SOFT_CAMERA_ALPHA for the alpha value.
-        //
-        // If the player is in the hard exclusion zones, the camera should hard-adjust so that
-        // the player's center is always kept at most *at* the red lines. This means that the
-        // player center must NEVER pass the red lines.
-        //
-        // Use SOFT_LIMIT_PERCENT and HARD_LIMIT_PERCENT to parameterize the green and red
-        // line positions.
-        camera.setCameraCenter({player.position.x, WINDOW_HEIGHT * 0.5f});
+        } else if (camera.worldToWindowPercent(player.position).x > (1 - SOFT_LIMIT_PERCENT)) {
+            sf::Vector2f boundaryLocation(WINDOW_WIDTH * (1 - SOFT_LIMIT_PERCENT),
+                                          camera.worldToWindow(player.position).y);
+            sf::Vector2f newPlayerLocWindow =
+                camera.worldToWindow(player.position) +
+                (SOFT_CAMERA_ALPHA) * (boundaryLocation - camera.worldToWindow(player.position));
+            camera.setCamera(player.position, newPlayerLocWindow);
+
+        } else if (camera.worldToWindowPercent(player.position).x < HARD_LIMIT_PERCENT) {
+            // hard adjust so that the player's center is always kept at most *at* the red lines.
+            camera.setCamera(player.position, {WINDOW_WIDTH * HARD_LIMIT_PERCENT, camera.worldToWindow(player.position).y});
+
+        } else if (camera.worldToWindowPercent(player.position).x > (1 - HARD_LIMIT_PERCENT)) {
+            camera.setCamera(player.position, {WINDOW_WIDTH * (1 - HARD_LIMIT_PERCENT), camera.worldToWindow(player.position).y});
+        }
 
         worldView.setCenter(camera.getCameraCenter());
         window.clear(sf::Color::Black);

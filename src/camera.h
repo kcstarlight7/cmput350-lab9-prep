@@ -12,29 +12,64 @@ public:
           mViewCenterWorld{viewCenterWorld},
           mWorldUnitsPerPixel{worldUnitsPerPixel} {}
 
-    // TODO: all of these:
+    // all of these:
 
-    sf::Vector2f windowToWorld(const sf::Vector2f& pWindow) { return {}; };
+    sf::Vector2f windowToWorld(const sf::Vector2f& pWindow) { 
+        // pWindow is in window coords
+        // camera moved by some amount in world coords
+        // some amount -> view center in window coords, - what would've been view center at 0,0 in window coords
+        sf::Vector2f viewCenterWindow = mViewCenterWorld / mWorldUnitsPerPixel;
+        sf::Vector2f originViewCenter = mWindowSize * 0.5f;
+        sf::Vector2f movementDiff = viewCenterWindow - originViewCenter;
+        // (pWindow + some amount in window) * worldunits/px = pWindow in world
+        sf::Vector2f result = (pWindow + movementDiff) * mWorldUnitsPerPixel;
+        
+        return result; 
+    };
 
-    sf::Vector2f worldToWindow(const sf::Vector2f& pWorld) { return {}; };
+    sf::Vector2f worldToWindow(const sf::Vector2f& pWorld) { 
+        sf::Vector2f viewCenterWindow = mViewCenterWorld / mWorldUnitsPerPixel;
+        sf::Vector2f originViewCenter = mWindowSize * 0.5f;
+        sf::Vector2f movementDiff = viewCenterWindow - originViewCenter;
+        sf::Vector2f result = pWorld / mWorldUnitsPerPixel - movementDiff;
 
-    sf::Vector2f windowPercentToWorld(const sf::Vector2f& pWindowPercent) { return {}; };
+        return result; 
+    };
 
-    sf::Vector2f worldToWindowPercent(const sf::Vector2f& pWorld) { return {}; };
+    sf::Vector2f windowPercentToWorld(const sf::Vector2f& pWindowPercent) { 
+        sf::Vector2f windowPoint = pWindowPercent * mWindowSize;
+    
+        return windowToWorld(windowPoint); 
+    };
 
-    void translateWorld(const sf::Vector2f& deltaWorld) {};
+    sf::Vector2f worldToWindowPercent(const sf::Vector2f& pWorld) { 
+        sf::Vector2f pointInWindow = worldToWindow(pWorld);
 
-    void translateWindow(const sf::Vector2f& deltaScreen) {};
+        return pointInWindow / mWindowSize;
+    };
 
-    void translateWindowPercent(const sf::Vector2f& deltaScreenPercent) {};
+    void translateWorld(const sf::Vector2f& deltaWorld) { mViewCenterWorld += deltaWorld; };
 
-    void setCamera(const sf::Vector2f& pWorld, const sf::Vector2f& pWindow) {};
+    void translateWindow(const sf::Vector2f& deltaScreen) { mViewCenterWorld += (deltaScreen * mWorldUnitsPerPixel); };
 
-    void setCameraPercent(const sf::Vector2f& pWorld, const sf::Vector2f& pWindowPercent) {};
+    void translateWindowPercent(const sf::Vector2f& deltaScreenPercent) {
+        mViewCenterWorld += (deltaScreenPercent * mWindowSize * mWorldUnitsPerPixel);
+    };
 
-    void setCameraCenter(const sf::Vector2f& pWorld) {};
+    void setCamera(const sf::Vector2f& pWorld, const sf::Vector2f& pWindow) {
+        sf::Vector2f differenceWorld = (pWindow - (mWindowSize * 0.5f)) * mWorldUnitsPerPixel;
+        
+        mViewCenterWorld = pWorld - differenceWorld;
+    };
 
-    sf::Vector2f getCameraCenter() const { return {}; };
+    void setCameraPercent(const sf::Vector2f& pWorld, const sf::Vector2f& pWindowPercent) {
+        sf::Vector2f windowPt = pWindowPercent * mWindowSize;
+        setCamera(pWorld, windowPt);
+    };
+
+    void setCameraCenter(const sf::Vector2f& pWorld) { mViewCenterWorld = pWorld; };
+
+    sf::Vector2f getCameraCenter() const { return mViewCenterWorld; };
 
 private:
     sf::Vector2f mWindowSize;       // size of the window in screen pixels (i.e. window coords)
